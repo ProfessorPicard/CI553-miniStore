@@ -6,10 +6,11 @@ import java.io.Serializable;
  * Used to hold the following information about
  * a product: Product number, Description, Price, Stock level.
  * @author  Mike Smith University of Brighton
- * @version 2.0
+ * @author      Peter Blackburn
+ * @version 2.1
  */
 
-public class Product implements Serializable
+public class Product implements Serializable, Comparable<Product>
 {
   private static final long serialVersionUID = 20092506;
   private String theProductNum;       // Product number
@@ -56,6 +57,21 @@ public class Product implements Serializable
   public void setQuantity( int aQuantity )
   { 
     theQuantity = aQuantity;
+  }
+
+
+  /**
+   * @param pr    The product being compared.
+   * @return      The result of the comparison (1 if higher, 0 if equal, -1 if lower)
+   * @author      Peter Blackburn
+   */
+  @Override
+  public int compareTo(Product pr) {
+    //Parse the product numbers from strings into longs
+    long productNum = Long.parseLong(theProductNum);
+    long productNumCompare = Long.parseLong(pr.theProductNum);
+    //Use the built-in Long compare function to return an ascending comparison
+      return Long.compare(productNum, productNumCompare);
   }
 
 }
