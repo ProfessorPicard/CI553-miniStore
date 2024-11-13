@@ -14,6 +14,8 @@ import middle.StockReader;
 
 import javax.swing.*;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.Collections;
 
 // There can only be 1 ResultSet opened per statement
 // so no simultaneous use of the statement object
@@ -66,7 +68,6 @@ public class StockR implements StockReader
    * Returns a statement object that is used to process SQL statements
    * @return A statement object used to access the database
    */
-  
   protected Statement getStatementObject()
   {
     return theStmt;
@@ -77,11 +78,74 @@ public class StockR implements StockReader
    * requests to the DataBase
    * @return a connection object
    */
-
   protected Connection getConnectionObject()
   {
     return theCon;
   }
+
+  /**
+   * Checks if the product exits in the stock list by item name
+   * @param pSearch The search term
+   * @return Arraylist of all matched products. Empty list if none found.
+   */
+  public synchronized ArrayList<Product> searchProducts(String pSearch) throws StockException {
+    try {
+
+      //Split search terms up into individual terms, seperated by spaces
+      String[] terms = pSearch.split(" ");
+
+      //Create a new StringBuilder ready to make our SQL Statement
+      StringBuilder sb = new StringBuilder();
+
+      //Get all fields from ProductTable
+      sb.append("SELECT * from ProductTable ");
+
+      //Inner Join the StockTable with the ProductTable by ProductNumber
+      sb.append("INNER JOIN StockTable ON ProductTable.ProductNo = StockTable.ProductNo ");
+
+      //Start our matching terms on the description column
+      sb.append("WHERE UPPER(ProductTable.description) ");
+
+      //For each search term we append our SQL to match to the search terms.
+      // All converted to Uppercase to make sure there are no case mismatches
+      for(int i=0; i<terms.length; i++) {
+        if(i != 0)
+          sb.append(" OR UPPER(ProductTable.description) ");
+
+        sb.append("LIKE '%" + terms[i].toUpperCase() + "%'");
+      }
+
+      //Print out our SQL in the debug window to make sure it's ok
+      DEBUG.trace( "DB StockR: search sql(%s)",
+              sb.toString());
+
+      ResultSet rs = getStatementObject().executeQuery(sb.toString());
+
+      //While we have a result in the result set, add the product to our Arraylist
+      //and increase our count of products found
+      ArrayList<Product> products = new ArrayList<>();
+      int count = 0;
+      while (rs.next()) {
+        Product product = new Product("0", "", 0.00, 0);
+        product.setProductNum(rs.getString("ProductNo"));
+        product.setDescription(rs.getString("description"));
+        product.setPrice(rs.getDouble("price"));
+        product.setQuantity(rs.getInt("stockLevel"));
+        products.add(product);
+        count++;
+      }
+      //Print our count of products to the debug terminal to make sure it matches
+      DEBUG.trace( "DB StockR: search results(%s)",
+              count);
+
+      //Return our products to whoever asked for them
+      return products;
+    } catch (SQLException e) {
+      //If we catch an SQL Exception, Throw a StockException with the message
+      throw new StockException( "SQL Search Products: " + e.getMessage() );
+    }
+  }
+
 
   /**
    * Checks if the product exits in the stock list

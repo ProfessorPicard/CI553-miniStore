@@ -16,7 +16,7 @@ public class Product implements Serializable, Comparable<Product>
   private String theProductNum;       // Product number
   private String theDescription;      // Description of product
   private double thePrice;            // Price of product
-  private int    theQuantity;         // Quantity involved
+  private int    theQuantity;         // Quantity involved (Either Stock Level or Items In Basket)
 
   /**
    * Construct a product details
@@ -43,22 +43,18 @@ public class Product implements Serializable, Comparable<Product>
   { 
     theProductNum = aProductNum;
   }
-  
   public void setDescription( String aDescription )
   { 
     theDescription = aDescription;
   }
-  
   public void setPrice( double aPrice )
   { 
     thePrice = aPrice;
   }
-  
   public void setQuantity( int aQuantity )
   { 
     theQuantity = aQuantity;
   }
-
 
   /**
    * @param pr    The product being compared.
@@ -71,7 +67,7 @@ public class Product implements Serializable, Comparable<Product>
     long productNum = Long.parseLong(theProductNum);
     long productNumCompare = Long.parseLong(pr.theProductNum);
     //Use the built-in Long compare function to return an ascending comparison
-      return Long.compare(productNum, productNumCompare);
+    return Long.compare(productNum, productNumCompare);
   }
 
 }

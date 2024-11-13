@@ -16,11 +16,11 @@ import remote.RemoteStockR_I;
 import javax.swing.*;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 
 /**
  * Setup connection to the middle tier
  */
-
 public class F_StockR implements StockReader
 {
   private RemoteStockR_I aR_StockR   = null;
@@ -49,10 +49,27 @@ public class F_StockR implements StockReader
   }
 
   /**
+   * Returns Arraylist of matching products for search terms
+   * @return All fields for products with matching search terms
+   */
+  @Override
+  public ArrayList<Product> searchProducts(String pSearch) throws StockException {
+    DEBUG.trace("F_StockR:search()" );
+    try
+    {
+      if ( aR_StockR == null ) connect();
+      return aR_StockR.searchProducts(pSearch);
+    } catch ( RemoteException e )
+    {
+      aR_StockR = null;
+      throw new StockException( "Net: " + e.getMessage() );
+    }
+  }
+
+  /**
    * Checks if the product exits in the stock list
    * @return true if exists otherwise false
    */
-
   public synchronized boolean exists( String number )
          throws StockException
   {
@@ -72,7 +89,6 @@ public class F_StockR implements StockReader
    * Returns details about the product in the stock list
    * @return StockNumber, Description, Price, Quantity
    */
-
   public synchronized Product getDetails( String number )
          throws StockException
   {

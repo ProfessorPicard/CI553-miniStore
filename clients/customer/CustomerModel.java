@@ -10,6 +10,7 @@ import middle.StockException;
 import middle.StockReader;
 
 import javax.swing.*;
+import java.util.ArrayList;
 import java.util.Observable;
 
 /**
@@ -50,6 +51,34 @@ public class CustomerModel extends Observable
   public BetterBasket getBasket()
   {
     return theBasket;
+  }
+
+  /**
+   * Returns an ArrayList of products matching the search terms
+   * @param pSearch Space seperated list of search terms
+   */
+  public void doProductSearch(String pSearch) {
+
+    theBasket.clear();
+    String theAction = "";
+
+    try {
+      ArrayList<Product> products = theStock.searchProducts(pSearch);
+      if (products.size() > 0) {
+        for(Product product : products) {
+          theBasket.add(product);
+          //System.out.println("PRODUCT: " + product.getDescription() + " | STOCK: " + product.getQuantity());
+        }
+      } else {
+        theAction = "No Products Found";
+      }
+    } catch (StockException e) {
+      DEBUG.error("%s\n%s",
+              "CashierModel.doProductSearch", e.getMessage());
+      theAction = e.getMessage();
+    }
+    setChanged();
+    notifyObservers(theAction);
   }
 
   /**

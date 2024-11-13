@@ -12,6 +12,7 @@ import clients.customer.CustomerView;
 import clients.packing.PackingController;
 import clients.packing.PackingModel;
 import clients.packing.PackingView;
+import debug.DEBUG;
 import middle.LocalMiddleFactory;
 import middle.MiddleFactory;
 import javax.swing.*;
@@ -38,7 +39,8 @@ class Main
    */
   public void begin()
   {
-    //DEBUG.set(true); /* Lots of debug info */
+    //Turned on the Debugging for Development branch
+    DEBUG.set(true); /* Lots of debug info */
     MiddleFactory mlf = new LocalMiddleFactory();  // Direct access
     startCustomerGUI_MVC( mlf );
     startCashierGUI_MVC( mlf );

@@ -1,6 +1,5 @@
 package clients.cashier;
 
-import catalogue.Basket;
 import catalogue.BetterBasket;
 import catalogue.Product;
 import debug.DEBUG;
@@ -52,7 +51,7 @@ public class CashierModel extends Observable
   }
 
   /**
-   * Check if the product is in Stock
+   * Check if the product is in Stock by Product Number
    * @param productNum The product number
    */
   public void doCheck(String productNum )
@@ -87,7 +86,7 @@ public class CashierModel extends Observable
     } catch( StockException e )
     {
       DEBUG.error( "%s\n%s", 
-            "CashierModel.doCheck", e.getMessage() );
+            "CashierModel.doProductNumberCheck", e.getMessage() );
       theAction = e.getMessage();
     }
     setChanged(); notifyObservers(theAction);

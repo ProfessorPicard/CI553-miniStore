@@ -6,6 +6,7 @@ import middle.StockException;
 
 import javax.swing.*;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 
 // There can only be 1 ResultSet opened per statement
 // so no simultaneous use of the statement object
@@ -48,6 +49,17 @@ public class      R_StockRW
          throws StockException
   {
     return aStockRW.exists( pNum );
+  }
+
+  /**
+   * Returns ArrayList of matched products
+   * @param pSearch The space seperated search terms
+   * @return All fields for matched products, including available stock
+   * @throws middle.StockException if underlying error
+   */
+  @Override
+  public ArrayList<Product> searchProducts(String pSearch) throws RemoteException, StockException {
+    return aStockRW.searchProducts(pSearch);
   }
 
   /**
