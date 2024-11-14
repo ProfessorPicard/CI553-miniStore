@@ -74,17 +74,16 @@ public class CashierModel extends Observable
   {
     String theAction = "";
     searchBasket.clear();
-    theState  = State.process;                  // State process
+    theState  = State.process;
     pn  = productNum.trim();
     try
     {
-      if ( theStock.exists( pn ) )              // Stock Exists?
-      {                                         // T
-        Product pr = theStock.getDetails(pn);   //  Get details
+      if (theStock.exists( pn ))
+      {
+        Product pr = theStock.getDetails(pn);
         searchBasket.add(pr);
-      } else {                                  // F Stock exists
-        theAction =                             //  Unknown
-          "Product number not found | " + pn;       //  product no.
+      } else {
+        theAction = "Product number not found | " + pn;
       }
       theState = State.checked;
     } catch( StockException e )
@@ -104,7 +103,7 @@ public class CashierModel extends Observable
   public void doProductSearch(String pSearch) {
 
     searchBasket.clear();
-    theState  = State.process;                  // State process
+    theState  = State.process;
     String theAction = "";
 
     try {
@@ -113,6 +112,7 @@ public class CashierModel extends Observable
         for(Product product : products) {
           searchBasket.add(product);
         }
+        theAction = products.size() + " products found";
       } else {
         theAction = "No Products Found";
       }

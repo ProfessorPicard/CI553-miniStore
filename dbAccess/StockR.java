@@ -131,6 +131,7 @@ public class StockR implements StockReader
         product.setDescription(rs.getString("description"));
         product.setPrice(rs.getDouble("price"));
         product.setQuantity(rs.getInt("stockLevel"));
+        product.setPictureURL(rs.getString("picture"));
         products.add(product);
         count++;
       }
@@ -185,7 +186,7 @@ public class StockR implements StockReader
     {
       Product   dt = new Product( "0", "", 0.00, 0 );
       ResultSet rs = getStatementObject().executeQuery(
-        "select description, price, stockLevel " +
+        "select * " +
         "  from ProductTable, StockTable " +
         "  where  ProductTable.productNo = '" + pNum + "' " +
         "  and    StockTable.productNo   = '" + pNum + "'"
@@ -196,6 +197,7 @@ public class StockR implements StockReader
         dt.setDescription(rs.getString( "description" ) );
         dt.setPrice( rs.getDouble( "price" ) );
         dt.setQuantity( rs.getInt( "stockLevel" ) );
+        dt.setPictureURL(rs.getString("picture"));
       }
       rs.close();
       return dt;

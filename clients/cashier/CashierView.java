@@ -4,6 +4,7 @@ import catalogue.Basket;
 import catalogue.BetterBasket;
 import catalogue.Enums.SearchSelection;
 import catalogue.Product;
+import custom.BasketRenderer;
 import debug.DEBUG;
 import middle.MiddleFactory;
 import middle.OrderProcessing;
@@ -188,6 +189,7 @@ public class CashierView implements Observer
     theSP.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
     jList.setBounds(0, 0, 330, 180);
+    jList.setCellRenderer(new BasketRenderer());
     jList.addListSelectionListener(new ListSelectionListener() {
 
       @Override

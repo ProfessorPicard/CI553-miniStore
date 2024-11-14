@@ -1,5 +1,6 @@
 package catalogue;
 
+import javax.swing.*;
 import java.io.Serializable;
 
 /**
@@ -17,7 +18,7 @@ public class Product implements Serializable, Comparable<Product>
   private String theDescription;      // Description of product
   private double thePrice;            // Price of product
   private int    theQuantity;         // Quantity involved (Either Stock Level or Items In Basket)
-
+  private String pictureURL;
   /**
    * Construct a product details
    * @param aProductNum Product number
@@ -38,6 +39,7 @@ public class Product implements Serializable, Comparable<Product>
   public String getDescription() { return theDescription; }
   public double getPrice()       { return thePrice; }
   public int    getQuantity()    { return theQuantity; }
+  public String getPictureURL()  { return pictureURL; }
   
   public void setProductNum( String aProductNum )
   { 
@@ -55,6 +57,7 @@ public class Product implements Serializable, Comparable<Product>
   { 
     theQuantity = aQuantity;
   }
+  public void setPictureURL(String pictureURL) { this.pictureURL = pictureURL; }
 
   /**
    * @param pr    The product being compared.
