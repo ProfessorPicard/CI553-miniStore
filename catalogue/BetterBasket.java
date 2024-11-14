@@ -37,8 +37,7 @@ public class BetterBasket extends Basket implements Serializable
    * @author      Peter Blackburn
    */
   @Override
-  public boolean add( Product pr )
-  {
+  public boolean add(Product pr) {
     //Check if product is already in the basket by product number
     for(Product p : this) {
       DEBUG.trace("PRODUCT NUMBER:" + p.getProductNum());

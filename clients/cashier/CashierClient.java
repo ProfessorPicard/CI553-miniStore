@@ -44,6 +44,6 @@ public class CashierClient
 
     model.addObserver( view );       // Add observer to the model
     window.setVisible(true);         // Display Screen
-    model.askForUpdate();
+    model.askForUpdate("Welcome");
   }
 }

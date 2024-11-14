@@ -45,7 +45,7 @@ public class CashierController
    */
   public void doBuy(Product product)
   {
-    model.doBuy(product);
+    model.addToBasket(product);
   }
   
    /**
@@ -53,7 +53,14 @@ public class CashierController
    */
   public void doBought()
   {
-    model.doBought();
+    model.checkoutBasket();
+  }
+
+  /**
+   *
+   */
+  public void removeFromCart(Product product) {
+    model.removeFromCart(product);
   }
 
   /**
