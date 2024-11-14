@@ -18,7 +18,7 @@ public class PackingView implements Observer
 {
   private static final String PACKED = "Packed";
 
-  private static final int H = 300;       // Height of window pixels
+  private static final int H = 500;       // Height of window pixels
   private static final int W = 400;       // Width  of window pixels
 
   private final JLabel      pageTitle  = new JLabel();

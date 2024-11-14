@@ -70,4 +70,9 @@ public class Product implements Serializable, Comparable<Product>
     return Long.compare(productNum, productNumCompare);
   }
 
+  @Override
+  public String toString() {
+    return theProductNum + " - " + theDescription + " | Total Price: " + thePrice * theQuantity + " - Qty: " + theQuantity;
+  }
+
 }

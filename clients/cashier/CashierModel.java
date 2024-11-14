@@ -1,10 +1,12 @@
 package clients.cashier;
 
 import catalogue.BetterBasket;
+import catalogue.Enums.SearchSelection;
 import catalogue.Product;
 import debug.DEBUG;
 import middle.*;
 
+import java.util.ArrayList;
 import java.util.Observable;
 
 /**
@@ -16,9 +18,12 @@ public class CashierModel extends Observable
 
   private State       theState   = State.process;   // Current state
   private Product     theProduct = null;            // Current product
-  private BetterBasket theBasket  = null;            // Bought items
+  private BetterBasket theBasket  = null;           // Bought items
+  private BetterBasket searchBasket = null;         // The Search Results
 
-  private String      pn = "";                      // Product being processed
+  private String pn = "";                      // Product being processed
+
+  private SearchSelection searchSelection = SearchSelection.PRODUCT_NUMBER;
 
   private StockReadWriter theStock     = null;
   private OrderProcessing theOrder     = null;
@@ -40,14 +45,25 @@ public class CashierModel extends Observable
     }
     theState   = State.process;                  // Current state
   }
-  
+
   /**
    * Get the Basket of products
-   * @return basket
+   * @return Basket
    */
   public BetterBasket getBasket()
   {
     return theBasket;
+  }
+
+  /**
+   * Get the Search Result of products
+   * @return Search Results
+   */
+  public BetterBasket getSearchBasket()
+  {
+    if(searchBasket == null)
+      searchBasket = new BetterBasket();
+    return searchBasket;
   }
 
   /**
@@ -57,67 +73,85 @@ public class CashierModel extends Observable
   public void doCheck(String productNum )
   {
     String theAction = "";
+    searchBasket.clear();
     theState  = State.process;                  // State process
-    pn  = productNum.trim();                    // Product no.
-    int    amount  = 1;                         //  & quantity
+    pn  = productNum.trim();
     try
     {
       if ( theStock.exists( pn ) )              // Stock Exists?
       {                                         // T
         Product pr = theStock.getDetails(pn);   //  Get details
-        if ( pr.getQuantity() >= amount )       //  In stock?
-        {                                       //  T
-          theAction =                           //   Display 
-            String.format( "%s : %7.2f (%2d) ", //
-              pr.getDescription(),              //    description
-              pr.getPrice(),                    //    price
-              pr.getQuantity() );               //    quantity     
-          theProduct = pr;                      //   Remember prod.
-          theProduct.setQuantity( amount );     //    & quantity
-          theState = State.checked;             //   OK await BUY 
-        } else {                                //  F
-          theAction =                           //   Not in Stock
-            pr.getDescription() +" not in stock";
-        }
+        searchBasket.add(pr);
       } else {                                  // F Stock exists
         theAction =                             //  Unknown
-          "Unknown product number " + pn;       //  product no.
+          "Product number not found | " + pn;       //  product no.
       }
+      theState = State.checked;
     } catch( StockException e )
     {
       DEBUG.error( "%s\n%s", 
             "CashierModel.doProductNumberCheck", e.getMessage() );
       theAction = e.getMessage();
     }
-    setChanged(); notifyObservers(theAction);
+    setChanged();
+    notifyObservers(theAction);
+  }
+
+  /**
+   * Returns an ArrayList of products matching the search terms
+   * @param pSearch Space seperated list of search terms
+   */
+  public void doProductSearch(String pSearch) {
+
+    searchBasket.clear();
+    theState  = State.process;                  // State process
+    String theAction = "";
+
+    try {
+      ArrayList<Product> products = theStock.searchProducts(pSearch);
+      if (products.size() > 0) {
+        for(Product product : products) {
+          searchBasket.add(product);
+        }
+      } else {
+        theAction = "No Products Found";
+      }
+      theState = State.checked;
+    } catch (StockException e) {
+      DEBUG.error("%s\n%s",
+              "CashierModel.doProductSearch", e.getMessage());
+      theAction = e.getMessage();
+    }
+    setChanged();
+    notifyObservers(theAction);
   }
 
   /**
    * Buy the product
    */
-  public void doBuy()
+  public void doBuy(Product product)
   {
     String theAction = "";
-    int    amount  = 1;                         //  & quantity
     try
     {
       if ( theState != State.checked )          // Not checked
       {                                         //  with customer
-        theAction = "please check its availablity";
+        theAction = "Please check availability first";
       } else {
         boolean stockBought =                   // Buy
           theStock.buyStock(                    //  however
-            theProduct.getProductNum(),         //  may fail              
-            theProduct.getQuantity() );         //
+                  product.getProductNum(),         //  may fail
+                  product.getQuantity() );         //
         if ( stockBought )                      // Stock bought
         {                                       // T
           makeBasketIfReq();                    //  new Basket ?
-          theBasket.add( theProduct );          //  Add to bought
+          theBasket.add(product);          //  Add to bought
           theAction = "Purchased " +            //    details
-                  theProduct.getDescription();  //
+                  product.getDescription();  //
         } else {                                // F
-          theAction = "!!! Not in stock";       //  Now no stock
+          theAction = "Couldn't Add to Basket";       //  Now no stock
         }
+        searchBasket = null;
       }
     } catch( StockException e )
     {
@@ -126,7 +160,8 @@ public class CashierModel extends Observable
       theAction = e.getMessage();
     }
     theState = State.process;                   // All Done
-    setChanged(); notifyObservers(theAction);
+    setChanged();
+    notifyObservers(theAction);
   }
   
   /**
@@ -135,18 +170,18 @@ public class CashierModel extends Observable
   public void doBought()
   {
     String theAction = "";
-    int    amount  = 1;                       //  & quantity
     try
     {
-      if ( theBasket != null &&
+      if (theBasket != null &&
            theBasket.size() >= 1 )            // items > 1
       {                                       // T
-        theOrder.newOrder( theBasket );       //  Process order
+        theOrder.newOrder(theBasket);       //  Process order
         theBasket = null;                     //  reset
       }                                       //
       theAction = "Start New Order";            // New order
       theState = State.process;               // All Done
        theBasket = null;
+       searchBasket = null;
     } catch( OrderException e )
     {
       DEBUG.error( "%s\n%s", 
@@ -158,12 +193,13 @@ public class CashierModel extends Observable
   }
 
   /**
-   * ask for update of view callled at start of day
+   * ask for update of view called at start of day
    * or after system reset
    */
   public void askForUpdate()
   {
-    setChanged(); notifyObservers("Welcome");
+    setChanged();
+    notifyObservers("Welcome");
   }
   
   /**
@@ -194,5 +230,21 @@ public class CashierModel extends Observable
   {
     return new BetterBasket();
   }
+
+  /**
+   * returns the type of search selected
+   * @return an Enum stating the type of search selected
+   */
+  public SearchSelection checkSearchSelection() { return searchSelection; }
+
+  /**
+   * Sets the type of search required
+   * @param searchSelection an Enum stating the type of search required
+   */
+  public void setSearchSelection(SearchSelection searchSelection) {
+    this.searchSelection = searchSelection;
+    DEBUG.trace("setSearchSelection", searchSelection);
+  }
+
 }
   

@@ -1,12 +1,22 @@
 package clients.cashier;
 
 import catalogue.Basket;
+import catalogue.BetterBasket;
+import catalogue.Enums.SearchSelection;
+import catalogue.Product;
+import debug.DEBUG;
 import middle.MiddleFactory;
 import middle.OrderProcessing;
 import middle.StockReadWriter;
 
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.*;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.sql.Array;
+import java.util.ArrayList;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -16,25 +26,42 @@ import java.util.Observer;
  */
 public class CashierView implements Observer
 {
-  private static final int H = 300;       // Height of window pixels
+  private static final int H = 500;       // Height of window pixels
   private static final int W = 400;       // Width  of window pixels
   
-  private static final String CHECK  = "Check";
-  private static final String BUY    = "Buy";
-  private static final String BOUGHT = "Bought/Pay";
+  private static final String CHECK  = "Search";
+  private static final String BUY    = "Add";
+  private static final String BOUGHT = "Checkout";
 
-  private final JLabel      pageTitle  = new JLabel();
-  private final JLabel      theAction  = new JLabel();
-  private final JTextField  theInput   = new JTextField();
-  private final JTextArea   theOutput  = new JTextArea();
-  private final JScrollPane theSP      = new JScrollPane();
-  private final JButton     theBtCheck = new JButton( CHECK );
-  private final JButton     theBtBuy   = new JButton( BUY );
-  private final JButton     theBtBought= new JButton( BOUGHT );
+  private final JLabel        pageTitle  = new JLabel();
+  private final JLabel        theAction  = new JLabel();
 
-  private StockReadWriter theStock     = null;
-  private OrderProcessing theOrder     = null;
-  private CashierController cont       = null;
+  private final JTabbedPane   sections   = new JTabbedPane();
+  private final JPanel        basket     = new JPanel();
+  private final JPanel        search     = new JPanel();
+
+  private final JRadioButton  productNoRadio = new JRadioButton("Product Number");
+  private final JRadioButton  keywordSearch = new JRadioButton("Keyword Search");
+  private final ButtonGroup   searchGroup = new ButtonGroup();
+
+  private final JList<Product> jList     = new JList<>();
+
+  private Integer[] quantityValues = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+  private final JTextField             theInput   = new JTextField();
+  private final JTextArea              theOutput  = new JTextArea();
+  private final JScrollPane            theSP      = new JScrollPane();
+  private final JButton                btnCheck = new JButton( CHECK );
+  private final JButton                btnAddToCart = new JButton( BUY );
+  private final JButton                btnCheckout = new JButton( BOUGHT );
+  private final JComboBox<Integer>     quantity = new JComboBox<>(quantityValues);
+
+  private ArrayList<Product> searchBasket = new ArrayList<>();
+  private Product selectedProduct = null;
+
+  private StockReadWriter     theStock     = null;
+  private OrderProcessing     theOrder     = null;
+  private CashierController   cont       = null;
   
   /**
    * Construct the view
@@ -60,40 +87,141 @@ public class CashierView implements Observer
     rootWindow.setSize( W, H );                     // Size of Window
     rootWindow.setLocation( x, y );
 
+    search.setLayout(new GroupLayout(search));
+    basket.setLayout(new GroupLayout(basket));
+
     Font f = new Font("Monospaced",Font.PLAIN,12);  // Font f is
 
-    pageTitle.setBounds( 110, 0 , 270, 20 );       
-    pageTitle.setText( "Thank You for Shopping at MiniStrore" );                        
-    cp.add( pageTitle );  
-    
-    theBtCheck.setBounds( 16, 25+60*0, 80, 40 );    // Check Button
-    theBtCheck.addActionListener(                   // Call back code
-      e -> cont.doCheck( theInput.getText() ) );
-    cp.add( theBtCheck );                           //  Add to canvas
+    pageTitle.setBounds( 10, 10 , 380, 20 );
+    pageTitle.setText( "Thank You for Shopping at Mini-Store" );
+    cp.add( pageTitle );
 
-    theBtBuy.setBounds( 16, 25+60*1, 80, 40 );      // Buy button 
-    theBtBuy.addActionListener(                     // Call back code
-      e -> cont.doBuy() );
-    cp.add( theBtBuy );                             //  Add to canvas
-
-    theBtBought.setBounds( 16, 25+60*3, 80, 40 );   // Bought Button
-    theBtBought.addActionListener(                  // Call back code
-      e -> cont.doBought() );
-    cp.add( theBtBought );                          //  Add to canvas
-
-    theAction.setBounds( 110, 25 , 270, 20 );       // Message area
+    theAction.setBounds( 10, 40 , 380, 20 );       // Message area
     theAction.setText( "" );                        // Blank
-    cp.add( theAction );                            //  Add to canvas
+    cp.add(theAction);                            //  Add to canvas
 
-    theInput.setBounds( 110, 50, 270, 40 );         // Input Area
-    theInput.setText("");                           // Blank
-    cp.add( theInput );                             //  Add to canvas
+    basket.setBackground(Color.BLUE);
+    search.setBackground(Color.RED);
 
-    theSP.setBounds( 110, 100, 270, 160 );          // Scrolling pane
-    theOutput.setText( "" );                        //  Blank
-    theOutput.setFont( f );                         //  Uses font  
-    cp.add( theSP );                                //  Add to canvas
-    theSP.getViewport().add( theOutput );           //  In TextArea
+    sections.add("Basket", basket);
+    sections.add("Search", search);
+
+    sections.setBounds(10, 70, 365, 380);
+    cp.add(sections);
+
+    theInput.setBounds( 10, 10, 340, 40 );         // Input Area
+    theInput.setText("");                                          // Blank
+    search.add(theInput);                                        // Add to canvas
+
+    btnCheck.setBounds( 10, 55, 80, 40 );    // Check Button
+    btnCheck.addActionListener(                   // Call back code
+      e -> cont.doCheck(theInput.getText()));
+    search.add(btnCheck);                           //  Add to canvas
+
+    productNoRadio.setBounds(100, 55, 120, 40);
+    productNoRadio.setSelected(true);
+    productNoRadio.addItemListener(new ItemListener() {
+
+      @Override
+      public void itemStateChanged(ItemEvent event) {
+        if(cont != null) {
+          int state = event.getStateChange();
+          if (state == ItemEvent.SELECTED) {
+            cont.setSearchType(SearchSelection.PRODUCT_NUMBER);
+          } else if (state == ItemEvent.DESELECTED) {
+            cont.setSearchType(SearchSelection.KEYWORD);
+          }
+        }
+      }
+    });
+    keywordSearch.setBounds(230, 55, 120, 40);
+    productNoRadio.setSelected(false);
+    keywordSearch.addItemListener(new ItemListener() {
+
+      @Override
+      public void itemStateChanged(ItemEvent event) {
+        if(cont != null) {
+          int state = event.getStateChange();
+          if (state == ItemEvent.SELECTED) {
+            cont.setSearchType(SearchSelection.KEYWORD);
+          } else if (state == ItemEvent.DESELECTED) {
+            cont.setSearchType(SearchSelection.PRODUCT_NUMBER);
+          }
+        }
+      }
+    });
+
+    searchGroup.add(productNoRadio);
+    searchGroup.add(keywordSearch);
+
+    search.add(productNoRadio);
+    search.add(keywordSearch);
+
+    btnAddToCart.setBounds( 10, 300, 100, 40 );      // Buy button
+    btnAddToCart.setEnabled(false);
+    btnAddToCart.addActionListener(                     // Call back code
+      e -> cont.doBuy(selectedProduct) );
+    search.add(btnAddToCart);                             //  Add to canvas
+
+    quantity.setBounds(120, 300, 100, 40);
+    quantity.setEnabled(false);
+    quantity.addItemListener(new ItemListener() {
+      public void itemStateChanged(ItemEvent event) {
+        int state = event.getStateChange();
+        if (state == ItemEvent.SELECTED) {
+          if(selectedProduct != null)
+            selectedProduct.setQuantity((Integer) quantity.getSelectedItem());
+        }
+      }
+    });
+    search.add(quantity);
+
+    btnCheckout.setBounds( 230, 300, 100, 40 );   // Bought Button
+    btnCheckout.setEnabled(false);
+    btnCheckout.addActionListener(                  // Call back code
+      e -> cont.doBought());
+//    search.add(btnCheckout);                          //  Add to canvas
+
+    theSP.setBounds( 10, 100, 340, 190 );          // Scrolling pane
+
+    theSP.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+    theSP.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+    jList.setBounds(0, 0, 330, 180);
+    jList.addListSelectionListener(new ListSelectionListener() {
+
+      @Override
+      public void valueChanged(ListSelectionEvent event) {
+
+        btnAddToCart.setEnabled(!jList.isSelectionEmpty());
+        quantity.setEnabled(!jList.isSelectionEmpty());
+        quantity.setSelectedIndex(0);
+
+        if (!event.getValueIsAdjusting()) {
+          JList source = (JList) event.getSource();
+          if(source.getSelectedIndex() == -1)
+            selectedProduct = null;
+          else {
+            Product p = (Product) source.getSelectedValue();
+            selectedProduct = new Product(p.getProductNum(), p.getDescription(), p.getPrice(), (Integer) quantity.getSelectedItem());
+            DEBUG.trace(selectedProduct.getDescription());
+          }
+        }
+      }
+    });
+
+    theOutput.setBounds(10, 10, 365, 380);
+    theOutput.setText("");                        //  Blank
+    theOutput.setFont(f);                         //  Uses font
+    basket.add(theOutput);
+
+    theSP.getViewport().setBackground(Color.YELLOW);
+
+
+    theSP.getViewport().add(jList);           //  In TextArea
+    search.add(theSP);                                //  Add to canvas
+
+
     rootWindow.setVisible( true );                  // Make visible
     theInput.requestFocus();                        // Focus is here
   }
@@ -119,11 +247,13 @@ public class CashierView implements Observer
     CashierModel model  = (CashierModel) modelC;
     String      message = (String) arg;
     theAction.setText( message );
-    Basket basket = model.getBasket();
-    if ( basket == null )
-      theOutput.setText( "Customers order" );
-    else
-      theOutput.setText( basket.getDetails() );
+//    ArrayList<Product> basket = model.getBasket();
+    searchBasket = model.getSearchBasket();
+    jList.setListData(searchBasket.toArray(new Product[0]));
+//    if ( basket == null )
+//      theOutput.setText( "Customers order" );
+//    else
+//      theOutput.setText( basket.getDetails() );
     
     theInput.requestFocus();               // Focus is here
   }

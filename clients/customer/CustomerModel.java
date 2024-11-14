@@ -18,10 +18,11 @@ import java.util.Observable;
  */
 public class CustomerModel extends Observable
 {
-  private Product     theProduct = null;          // Current product
-  private BetterBasket      theBasket  = null;          // Bought items
+  private Product         theProduct = null;          // Current product
+  private BetterBasket    theBasket  = null;          // Bought items
+  private BetterBasket    searchBasket = null;         // The Search Results
 
-  private String      pn = "";                    // Product being processed
+  private String          pn = "";                    // Product being processed
 
   private StockReader     theStock     = null;
   private OrderProcessing theOrder     = null;
@@ -67,7 +68,6 @@ public class CustomerModel extends Observable
       if (products.size() > 0) {
         for(Product product : products) {
           theBasket.add(product);
-          //System.out.println("PRODUCT: " + product.getDescription() + " | STOCK: " + product.getQuantity());
         }
       } else {
         theAction = "No Products Found";

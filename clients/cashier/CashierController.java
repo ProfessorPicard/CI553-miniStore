@@ -1,6 +1,9 @@
 package clients.cashier;
 
 
+import catalogue.Enums.SearchSelection;
+import catalogue.Product;
+
 /**
  * The Cashier Controller
  */
@@ -23,19 +26,26 @@ public class CashierController
 
   /**
    * Check interaction from view
-   * @param pn The product number to be checked
+   * @param search The product number or keyword to be searched
    */
-  public void doCheck( String pn )
+  public void doCheck(String search)
   {
-    model.doCheck(pn);
+    switch (model.checkSearchSelection()) {
+      case KEYWORD:
+        model.doProductSearch(search);
+        break;
+      case PRODUCT_NUMBER:
+        model.doCheck(search);
+        break;
+    }
   }
 
    /**
    * Buy interaction from view
    */
-  public void doBuy()
+  public void doBuy(Product product)
   {
-    model.doBuy();
+    model.doBuy(product);
   }
   
    /**
@@ -45,4 +55,10 @@ public class CashierController
   {
     model.doBought();
   }
+
+  /**
+   * Set search type via radio button
+   */
+  public void setSearchType(SearchSelection searchType) { model.setSearchSelection(searchType); }
+
 }

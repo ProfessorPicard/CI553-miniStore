@@ -23,7 +23,7 @@ public class CustomerView implements Observer
     public static final String CLEAR  = "Clear";
   }
 
-  private static final int H = 300;       // Height of window pixels
+  private static final int H = 500;       // Height of window pixels
   private static final int W = 400;       // Width  of window pixels
 
   private final JLabel      pageTitle  = new JLabel();
