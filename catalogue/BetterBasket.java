@@ -15,6 +15,7 @@ import java.util.Collections;
 public class BetterBasket extends Basket implements Serializable
 {
   private static final long serialVersionUID = 1L;
+  private Product selectedProduct = null;
 
   /**
    * @param sortType    The type of sorting to be applied from SortType Enum
@@ -53,5 +54,9 @@ public class BetterBasket extends Basket implements Serializable
     sort(SortType.ASCENDING);
     return true;
   }
+
+  public void setSelectedProduct(Product product) { selectedProduct = product; }
+  public Product getSelectedProduct() { return selectedProduct; }
+  public void clearSelectedProduct() { selectedProduct = null;}
 
 }
