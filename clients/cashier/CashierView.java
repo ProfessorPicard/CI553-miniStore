@@ -35,6 +35,7 @@ public class CashierView implements Observer {
     private static final String REMOVE_BTN = "Remove";
     private static final String PRODUCT_NUMBER_RADIO = "Product Number";
     private static final String KEYWORD_RADIO = "Keyword Search";
+    private static final String PRICE_HEADER = "Total: ";
 
     //Container controls
     private JTabbedPane sections;
@@ -61,6 +62,8 @@ public class CashierView implements Observer {
     private JScrollPane basketSP;
     private JButton btnCheckout;
     private JButton btnRemove;
+    private JLabel totalPriceLabel;
+    private JLabel priceHeader;
 
     //Baskets for search and ordering
     private BetterBasket searchBasket;
@@ -122,6 +125,8 @@ public class CashierView implements Observer {
         basketSP = new JScrollPane();
         btnCheckout = new JButton(BOUGHT_BTN);
         btnRemove = new JButton(REMOVE_BTN);
+        priceHeader = new JLabel(PRICE_HEADER);
+        totalPriceLabel = new JLabel("");
     }
 
     /**
@@ -137,6 +142,14 @@ public class CashierView implements Observer {
         actionTxtLabel.setBounds(10, 40, 380, 20);
         actionTxtLabel.setText("");
         contentPanel.add(actionTxtLabel);
+
+        priceHeader.setBounds(130, 245, 100, 40);
+        priceHeader.setHorizontalAlignment(SwingConstants.RIGHT);
+        basketPanel.add(priceHeader);
+
+        totalPriceLabel.setBounds(240, 245, 100, 40);
+        totalPriceLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        basketPanel.add(totalPriceLabel);
 
         //JPanel Styling
         basketPanel.setLayout(new GroupLayout(basketPanel));
@@ -175,7 +188,7 @@ public class CashierView implements Observer {
         searchList.setBounds(0, 0, 330, 180);
         searchList.setCellRenderer(new SearchRenderer());
 
-        basketList.setBounds(0, 0, 330, 270);
+        basketList.setBounds(0, 0, 330, 220);
         basketList.setCellRenderer(new BasketRenderer());
 
         //Scroll Pane Styling
@@ -185,7 +198,7 @@ public class CashierView implements Observer {
         searchSP.getViewport().add(searchList);
         searchPanel.add(searchSP);
 
-        basketSP.setBounds(10, 10, 340, 275);
+        basketSP.setBounds(10, 10, 340, 225);
         basketSP.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         basketSP.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         basketSP.getViewport().add(basketList);
@@ -365,11 +378,15 @@ public class CashierView implements Observer {
         if (orderBasket != null) {
             basketList.setListData(orderBasket.toArray(new Product[0]));
             btnCheckout.setEnabled(!orderBasket.isEmpty());
+            totalPriceLabel.setText("£" + orderBasket.getBasketTotalPrice());
         } else {
             basketList.setListData(new Product[0]);
             btnCheckout.setEnabled(false);
+            totalPriceLabel.setText("£0.00");
         }
         searchList.clearSelection();
         basketList.clearSelection();
+
+
     }
 }

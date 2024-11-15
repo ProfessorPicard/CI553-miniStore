@@ -23,7 +23,7 @@ public class BasketRenderer extends AbstractRenderer {
         add(title, BorderLayout.LINE_START);
 
         JLabel price = new JLabel();
-        price.setText("£" + value.getPrice() * value.getQuantity());
+        price.setText("£" + value.getTotalPrice());
         add(price, BorderLayout.LINE_END);
 
         return this;
