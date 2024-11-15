@@ -68,7 +68,7 @@ public class CashierModel extends Observable {
      * Check if the product is in Stock by Product Number
      * @param productNum The product number
      */
-    public void doCheck(String productNum) {
+    public void searchByNumber(String productNum) {
 
         //Clear the search basket and reset the state and action strings
         String theAction = "";
@@ -115,7 +115,7 @@ public class CashierModel extends Observable {
      * Adds products matching the search terms to our search basket
      * @param pSearch Space seperated list of search terms
      */
-    public void doProductSearch(String pSearch) {
+    public void searchByKeyword(String pSearch) {
 
         //Clear the search basket and reset the state and action strings
         searchBasket.clear();

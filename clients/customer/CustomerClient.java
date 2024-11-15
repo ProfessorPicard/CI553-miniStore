@@ -14,7 +14,7 @@ import javax.swing.*;
  */
 public class CustomerClient
 {
-  public static void main (String args[])
+  public static void main (String[] args)
   {
     String stockURL = args.length < 1         // URL of stock R
                     ? Names.STOCK_R           //  default  location

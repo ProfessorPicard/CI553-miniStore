@@ -29,10 +29,10 @@ public class CashierController {
     public void doCheck(String search) {
         switch (model.checkSearchSelection()) {
             case KEYWORD:
-                model.doProductSearch(search);
+                model.searchByKeyword(search);
                 break;
             case PRODUCT_NUMBER:
-                model.doCheck(search);
+                model.searchByNumber(search);
                 break;
         }
     }

@@ -1,11 +1,13 @@
 package clients.customer;
 
+import catalogue.Enums.SearchSelection;
+
 /**
  * The Customer Controller
+ * @author Peter Blackburn
  */
 
-public class CustomerController
-{
+public class CustomerController {
   private CustomerModel model = null;
   private CustomerView  view  = null;
 
@@ -14,29 +16,40 @@ public class CustomerController
    * @param model The model 
    * @param view  The view from which the interaction came
    */
-  public CustomerController( CustomerModel model, CustomerView view )
-  {
+  public CustomerController( CustomerModel model, CustomerView view ) {
     this.view  = view;
     this.model = model;
   }
 
   /**
    * Check interaction from view
-   * @param pn The product number to be checked
+   * @param search The product number or keyword to be searched
    */
-  public void doCheck( String pn )
-  {
-    model.doCheck(pn);
+  public void doSearch(String search) {
+    switch (model.checkSearchSelection()) {
+      case KEYWORD:
+        model.searchByKeyword(search);
+        break;
+      case PRODUCT_NUMBER:
+        model.searchByNumber(search);
+        break;
+    }
   }
 
   /**
-   * Clear interaction from view
+   * Clears search basket
    */
-  public void doClear()
-  {
+  public void clearSearch() {
     model.doClear();
   }
 
-  
+  /**
+   * Set search type via radio button
+   * @param searchType the searchType enum that has been selected
+   */
+  public void setSearchType(SearchSelection searchType) {
+    model.setSearchSelection(searchType);
+  }
+
 }
 
