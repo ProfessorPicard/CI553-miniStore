@@ -6,8 +6,6 @@ import debug.DEBUG;
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.text.ParseException;
 import java.util.Collections;
 
 /**
