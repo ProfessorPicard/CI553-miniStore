@@ -1,6 +1,9 @@
 package clients.backDoor;
 
 
+import catalogue.Enums.SearchSelection;
+import catalogue.Product;
+
 /**
  * The BackDoor Controller
  */
@@ -8,7 +11,7 @@ package clients.backDoor;
 public class BackDoorController
 {
   private BackDoorModel model = null;
-  private BackDoorView  view  = null;
+  private BackDoorView view = null;
   /**
    * Constructor
    * @param model The model 
@@ -21,30 +24,43 @@ public class BackDoorController
   }
 
   /**
-   * Query interaction from view
-   * @param pn The product number to be checked
+   * Check interaction from view
+   * @param search The product number or keyword to be searched
    */
-  public void doQuery( String pn )
-  {
-    model.doQuery(pn);
+  public void doSearch(String search) {
+    switch (model.checkSearchSelection()) {
+      case KEYWORD:
+        model.searchByKeyword(search);
+        break;
+      case PRODUCT_NUMBER:
+        model.searchByNumber(search);
+        break;
+    }
   }
   
   /**
    * RStock interaction from view
-   * @param pn       The product number to be re-stocked
+   * @param selectedProduct The product to be re-stocked
    * @param quantity The quantity to be re-stocked
    */
-  public void doRStock( String pn, String quantity )
+  public void doRStock(Product selectedProduct, String quantity )
   {
-    model.doRStock(pn, quantity);
+    model.doRStock(selectedProduct, quantity);
   }
 
   /**
-   * Clear interaction from view
+   * Clears search basket
    */
-  public void doClear()
-  {
+  public void clearSearch() {
     model.doClear();
+  }
+
+  /**
+   * Set search type via radio button
+   * @param searchType the searchType enum that has been selected
+   */
+  public void setSearchType(SearchSelection searchType) {
+    model.setSearchSelection(searchType);
   }
 
   

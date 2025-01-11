@@ -40,7 +40,6 @@ public class CustomerView implements Observer {
     private JRadioButton keywordSearch;
     private ButtonGroup searchGroup;
 
-
     //Basket for search
     private BetterBasket searchBasket;
 
