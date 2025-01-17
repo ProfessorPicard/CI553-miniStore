@@ -3,6 +3,7 @@ package middle;
 import catalogue.Product;
 
 import javax.swing.*;
+import java.util.ArrayList;
 
 /**
   * Interface for read access to the stock list.
@@ -12,6 +13,14 @@ import javax.swing.*;
 
 public interface StockReader
 {
+
+ /**
+  * Returns ArrayList of all matched products
+  * @param pSearch Space seperated search terms
+  * @return All fields for matched products, including available stock
+  * @throws StockException if issue
+  */
+ ArrayList<Product> searchProducts(String pSearch) throws StockException;
 
  /**
    * Checks if the product exits in the stock list

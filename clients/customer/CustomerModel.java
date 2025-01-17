@@ -1,134 +1,177 @@
 package clients.customer;
 
-import catalogue.Basket;
+import catalogue.BetterBasket;
+import catalogue.Enums.SearchSelection;
 import catalogue.Product;
 import debug.DEBUG;
 import middle.MiddleFactory;
-import middle.OrderProcessing;
 import middle.StockException;
 import middle.StockReader;
 
-import javax.swing.*;
+import java.util.ArrayList;
 import java.util.Observable;
 
 /**
  * Implements the Model of the customer client
+ * @author Peter Blackburn
  */
-public class CustomerModel extends Observable
-{
-  private Product     theProduct = null;          // Current product
-  private Basket      theBasket  = null;          // Bought items
+public class CustomerModel extends Observable {
 
-  private String      pn = "";                    // Product being processed
+    //Initialise our search basket and the stock reader
+    private BetterBasket searchBasket = null;
+    private StockReader theStock = null;
 
-  private StockReader     theStock     = null;
-  private OrderProcessing theOrder     = null;
-  private ImageIcon       thePic       = null;
+    //The currently selected type of search
+    private SearchSelection searchSelection = SearchSelection.PRODUCT_NUMBER;
 
-  /*
-   * Construct the model of the Customer
-   * @param mf The factory to create the connection objects
-   */
-  public CustomerModel(MiddleFactory mf)
-  {
-    try                                          // 
-    {  
-      theStock = mf.makeStockReader();           // Database access
-    } catch ( Exception e )
-    {
-      DEBUG.error("CustomerModel.constructor\n" +
-                  "Database not created?\n%s\n", e.getMessage() );
-    }
-    theBasket = makeBasket();                    // Initial Basket
-  }
-  
-  /**
-   * return the Basket of products
-   * @return the basket of products
-   */
-  public Basket getBasket()
-  {
-    return theBasket;
-  }
-
-  /**
-   * Check if the product is in Stock
-   * @param productNum The product number
-   */
-  public void doCheck(String productNum )
-  {
-    theBasket.clear();                          // Clear s. list
-    String theAction = "";
-    pn  = productNum.trim();                    // Product no.
-    int    amount  = 1;                         //  & quantity
-    try
-    {
-      if ( theStock.exists( pn ) )              // Stock Exists?
-      {                                         // T
-        Product pr = theStock.getDetails( pn ); //  Product
-        if ( pr.getQuantity() >= amount )       //  In stock?
-        { 
-          theAction =                           //   Display 
-            String.format( "%s : %7.2f (%2d) ", //
-              pr.getDescription(),              //    description
-              pr.getPrice(),                    //    price
-              pr.getQuantity() );               //    quantity
-          pr.setQuantity( amount );             //   Require 1
-          theBasket.add( pr );                  //   Add to basket
-          thePic = theStock.getImage( pn );     //    product
-        } else {                                //  F
-          theAction =                           //   Inform
-            pr.getDescription() +               //    product not
-            " not in stock" ;                   //    in stock
+    /*
+     * Construct the model of the Customer
+     * @param mf The factory to create the connection objects
+     */
+    public CustomerModel(MiddleFactory mf) {
+        //Make our stock reader and create a search basket
+        try {
+            theStock = mf.makeStockReader();
+        } catch (Exception e) {
+            //Send error to DEBUG
+            DEBUG.error("""
+                    CustomerModel.constructor
+                    Database not created?
+                    %s
+                    """, e.getMessage());
         }
-      } else {                                  // F
-        theAction =                             //  Inform Unknown
-          "Unknown product number " + pn;       //  product number
-      }
-    } catch( StockException e )
-    {
-      DEBUG.error("CustomerClient.doCheck()\n%s",
-      e.getMessage() );
+        searchBasket = makeBasket();
     }
-    setChanged(); notifyObservers(theAction);
-  }
 
-  /**
-   * Clear the products from the basket
-   */
-  public void doClear()
-  {
-    String theAction = "";
-    theBasket.clear();                        // Clear s. list
-    theAction = "Enter Product Number";       // Set display
-    thePic = null;                            // No picture
-    setChanged(); notifyObservers(theAction);
-  }
-  
-  /**
-   * Return a picture of the product
-   * @return An instance of an ImageIcon
-   */ 
-  public ImageIcon getPicture()
-  {
-    return thePic;
-  }
-  
-  /**
-   * ask for update of view callled at start
-   */
-  private void askForUpdate()
-  {
-    setChanged(); notifyObservers("START only"); // Notify
-  }
+    /**
+     * return the Basket of products
+     * @return the basket of products
+     */
+    public BetterBasket getBasket() {
+        return searchBasket;
+    }
 
-  /**
-   * Make a new Basket
-   * @return an instance of a new Basket
-   */
-  protected Basket makeBasket()
-  {
-    return new Basket();
-  }
+    /**
+     * Returns an ArrayList of products matching the search terms
+     * @param pSearch Space seperated list of search terms
+     */
+    public void searchByKeyword(String pSearch) {
+        //Clear search basket and reset action text
+        searchBasket.clear();
+        String actionText = "";
+
+        try {
+
+            //Get an arrayList of all matched products and add them to the basket
+            //Set action text appropriately
+            ArrayList<Product> products = theStock.searchProducts(pSearch);
+            if (!products.isEmpty()) {
+                searchBasket.addAll(products);
+                actionText = products.size() + " Products Found";
+            } else {
+                actionText = "No Products Found";
+            }
+        } catch (StockException e) {
+            //Send error to DEBUG and action text
+            DEBUG.error("%s\n%s",
+                    "CashierModel.doProductSearch", e.getMessage());
+            actionText = e.getMessage();
+        }
+        //Notify observers of dataset change and send action text
+        askForUpdate(actionText);
+    }
+
+    /**
+     * Check if the product is in Stock by product number
+     * @param productNum The product number
+     */
+    public void searchByNumber(String productNum) {
+        //Reset all search variables and trim the product number to remove spaces
+        searchBasket.clear();
+        String actionText = "";
+        String pn = productNum.trim();
+
+        if(pn.isEmpty()) {
+          actionText = "No product number entered";
+          askForUpdate(actionText);
+          return;
+        }
+
+        try {
+            //If the item is found in the database then add it to the search results
+            if (theStock.exists(pn)) {                                         // T
+                Product pr = theStock.getDetails(pn);
+                searchBasket.add(pr);
+
+                //If the product is in stock or out of stock, set the action text appropriately
+                if (pr.getQuantity() > 0) {
+                    actionText = "Product in stock | " + pr.getDescription();
+                } else {
+                    actionText = "Product not in stock | " + pr.getDescription();
+                }
+            } else {
+                //If product is not found, set the action text
+                actionText = "Product number not found | " + pn;
+            }
+
+        } catch (StockException e) {
+
+            //Send error to DEBUG and to the action text
+            DEBUG.error("CustomerClient.doCheck()\n%s",
+                    e.getMessage());
+            actionText = e.getMessage();
+        }
+
+        //Notify observers of dataset change
+        askForUpdate(actionText);
+    }
+
+    /**
+     * Clear the products from the basket
+     */
+    public void doClear() {
+        //Clear the search basket and set action text
+        String theAction = "";
+        searchBasket.clear();
+        theAction = "Search for product by product number or keyword";
+
+        //Notify observers of dataset change
+        askForUpdate(theAction);
+    }
+
+    /**
+     * Notify observers of changed dataset
+     * @param actionText The string to be displayed in the action text label
+     */
+    private void askForUpdate(String actionText) {
+        //Notify observers of changed dataset and set action text
+        setChanged();
+        notifyObservers(actionText);
+    }
+
+    /**
+     * Make a new Basket
+     * @return an instance of a new Basket
+     */
+    protected BetterBasket makeBasket() {
+        return new BetterBasket();
+    }
+
+    /**
+     * returns the type of search selected
+     * @return an Enum stating the type of search selected
+     */
+    public SearchSelection checkSearchSelection() {
+        return searchSelection;
+    }
+
+    /**
+     * Sets the type of search required
+     * @param searchSelection an Enum stating the type of search required
+     */
+    public void setSearchSelection(SearchSelection searchSelection) {
+        this.searchSelection = searchSelection;
+        DEBUG.trace("setSearchSelection", searchSelection);
+    }
 }
 

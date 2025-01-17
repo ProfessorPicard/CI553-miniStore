@@ -1,198 +1,343 @@
 package clients.cashier;
 
-import catalogue.Basket;
+import catalogue.BetterBasket;
+import catalogue.Enums.OrderState;
+import catalogue.Enums.SearchSelection;
 import catalogue.Product;
 import debug.DEBUG;
 import middle.*;
 
+import java.util.ArrayList;
 import java.util.Observable;
 
 /**
  * Implements the Model of the cashier client
+ * @author Peter Blackburn
  */
-public class CashierModel extends Observable
-{
-  private enum State { process, checked }
+public class CashierModel extends Observable {
 
-  private State       theState   = State.process;   // Current state
-  private Product     theProduct = null;            // Current product
-  private Basket      theBasket  = null;            // Bought items
+    private OrderState orderState = OrderState.PROCESS;
 
-  private String      pn = "";                      // Product being processed
+    private BetterBasket theBasket = null;
+    private BetterBasket searchBasket = null;
 
-  private StockReadWriter theStock     = null;
-  private OrderProcessing theOrder     = null;
+    private SearchSelection searchSelection = SearchSelection.PRODUCT_NUMBER;
 
-  /**
-   * Construct the model of the Cashier
-   * @param mf The factory to create the connection objects
-   */
+    private StockReadWriter theStock = null;
+    private OrderProcessing theOrder = null;
 
-  public CashierModel(MiddleFactory mf)
-  {
-    try                                           // 
-    {      
-      theStock = mf.makeStockReadWriter();        // Database access
-      theOrder = mf.makeOrderProcessing();        // Process order
-    } catch ( Exception e )
-    {
-      DEBUG.error("CashierModel.constructor\n%s", e.getMessage() );
-    }
-    theState   = State.process;                  // Current state
-  }
-  
-  /**
-   * Get the Basket of products
-   * @return basket
-   */
-  public Basket getBasket()
-  {
-    return theBasket;
-  }
+    /**
+     * Construct the model of the Cashier
+     * @param mf The factory to create the connection objects
+     */
+    public CashierModel(MiddleFactory mf) {
+        try {
+            //Access the stock database
+            theStock = mf.makeStockReadWriter();
 
-  /**
-   * Check if the product is in Stock
-   * @param productNum The product number
-   */
-  public void doCheck(String productNum )
-  {
-    String theAction = "";
-    theState  = State.process;                  // State process
-    pn  = productNum.trim();                    // Product no.
-    int    amount  = 1;                         //  & quantity
-    try
-    {
-      if ( theStock.exists( pn ) )              // Stock Exists?
-      {                                         // T
-        Product pr = theStock.getDetails(pn);   //  Get details
-        if ( pr.getQuantity() >= amount )       //  In stock?
-        {                                       //  T
-          theAction =                           //   Display 
-            String.format( "%s : %7.2f (%2d) ", //
-              pr.getDescription(),              //    description
-              pr.getPrice(),                    //    price
-              pr.getQuantity() );               //    quantity     
-          theProduct = pr;                      //   Remember prod.
-          theProduct.setQuantity( amount );     //    & quantity
-          theState = State.checked;             //   OK await BUY 
-        } else {                                //  F
-          theAction =                           //   Not in Stock
-            pr.getDescription() +" not in stock";
+            //Process our order
+            theOrder = mf.makeOrderProcessing();
+
+        } catch (Exception e) {
+            DEBUG.error("CashierModel.constructor\n%s", e.getMessage());
         }
-      } else {                                  // F Stock exists
-        theAction =                             //  Unknown
-          "Unknown product number " + pn;       //  product no.
-      }
-    } catch( StockException e )
-    {
-      DEBUG.error( "%s\n%s", 
-            "CashierModel.doCheck", e.getMessage() );
-      theAction = e.getMessage();
-    }
-    setChanged(); notifyObservers(theAction);
-  }
 
-  /**
-   * Buy the product
-   */
-  public void doBuy()
-  {
-    String theAction = "";
-    int    amount  = 1;                         //  & quantity
-    try
-    {
-      if ( theState != State.checked )          // Not checked
-      {                                         //  with customer
-        theAction = "please check its availablity";
-      } else {
-        boolean stockBought =                   // Buy
-          theStock.buyStock(                    //  however
-            theProduct.getProductNum(),         //  may fail              
-            theProduct.getQuantity() );         //
-        if ( stockBought )                      // Stock bought
-        {                                       // T
-          makeBasketIfReq();                    //  new Basket ?
-          theBasket.add( theProduct );          //  Add to bought
-          theAction = "Purchased " +            //    details
-                  theProduct.getDescription();  //
-        } else {                                // F
-          theAction = "!!! Not in stock";       //  Now no stock
+        //Update the current state
+        orderState = OrderState.PROCESS;
+    }
+
+    /**
+     * Get the BetterBasket of products in the order
+     * @return BetterBasket of products in order
+     */
+    public BetterBasket getBasket() {
+        return theBasket;
+    }
+
+    /**
+     * Get the Search Result BetterBasket
+     * @return Search Result BetterBasket
+     */
+    public BetterBasket getSearchBasket() {
+        if (searchBasket == null)
+            searchBasket = new BetterBasket();
+        return searchBasket;
+    }
+
+    /**
+     * Check if the product is in Stock by Product Number
+     * @param productNum The product number
+     */
+    public void searchByNumber(String productNum) {
+
+        //Clear the search basket and reset the state and action strings
+        String theAction = "";
+        searchBasket.clear();
+        orderState = OrderState.PROCESS;
+
+        // Product being processed
+        String pn = productNum.trim();
+
+        if (pn.isEmpty()) {
+            theAction = "No product number entered";
+            askForUpdate(theAction);
+            return;
         }
-      }
-    } catch( StockException e )
-    {
-      DEBUG.error( "%s\n%s", 
-            "CashierModel.doBuy", e.getMessage() );
-      theAction = e.getMessage();
-    }
-    theState = State.process;                   // All Done
-    setChanged(); notifyObservers(theAction);
-  }
-  
-  /**
-   * Customer pays for the contents of the basket
-   */
-  public void doBought()
-  {
-    String theAction = "";
-    int    amount  = 1;                       //  & quantity
-    try
-    {
-      if ( theBasket != null &&
-           theBasket.size() >= 1 )            // items > 1
-      {                                       // T
-        theOrder.newOrder( theBasket );       //  Process order
-        theBasket = null;                     //  reset
-      }                                       //
-      theAction = "Start New Order";            // New order
-      theState = State.process;               // All Done
-       theBasket = null;
-    } catch( OrderException e )
-    {
-      DEBUG.error( "%s\n%s", 
-            "CashierModel.doCancel", e.getMessage() );
-      theAction = e.getMessage();
-    }
-    theBasket = null;
-    setChanged(); notifyObservers(theAction); // Notify
-  }
 
-  /**
-   * ask for update of view callled at start of day
-   * or after system reset
-   */
-  public void askForUpdate()
-  {
-    setChanged(); notifyObservers("Welcome");
-  }
-  
-  /**
-   * make a Basket when required
-   */
-  private void makeBasketIfReq()
-  {
-    if ( theBasket == null )
-    {
-      try
-      {
-        int uon   = theOrder.uniqueNumber();     // Unique order num.
-        theBasket = makeBasket();                //  basket list
-        theBasket.setOrderNum( uon );            // Add an order number
-      } catch ( OrderException e )
-      {
-        DEBUG.error( "Comms failure\n" +
-                     "CashierModel.makeBasket()\n%s", e.getMessage() );
-      }
-    }
-  }
+        try {
 
-  /**
-   * return an instance of a new Basket
-   * @return an instance of a new Basket
-   */
-  protected Basket makeBasket()
-  {
-    return new Basket();
-  }
+            //If the stock exists, add our product to the search basket.
+            if (theStock.exists(pn)) {
+                Product pr = theStock.getDetails(pn);
+                searchBasket.add(pr);
+            } else {
+
+                //Update our action text
+                theAction = "Product number not found | " + pn;
+            }
+
+            //Update our state to product checked
+            orderState = OrderState.CHECKED;
+
+        } catch (StockException e) {
+
+            //Send error message to debug and action text
+            DEBUG.error("%s\n%s",
+                    "CashierModel.doProductNumberCheck", e.getMessage());
+            theAction = e.getMessage();
+        }
+
+        //Update our observers with any changes made to the dataset
+        askForUpdate(theAction);
+    }
+
+    /**
+     * Adds products matching the search terms to our search basket
+     * @param pSearch Space seperated list of search terms
+     */
+    public void searchByKeyword(String pSearch) {
+
+        //Clear the search basket and reset the state and action strings
+        searchBasket.clear();
+        orderState = OrderState.PROCESS;
+        String theAction = "";
+
+        try {
+
+            //Get the results of our search into an arraylist.
+            //If the arrayList is not empty, add all the items to our search basket
+            ArrayList<Product> products = theStock.searchProducts(pSearch);
+            if (!products.isEmpty()) {
+                searchBasket.addAll(products);
+                theAction = products.size() + " products found";
+            } else {
+                theAction = "No Products Found";
+            }
+
+            //Update the state to show we checked the items and their stock
+            orderState = OrderState.CHECKED;
+
+        } catch (StockException e) {
+
+            //Send error message to debug and to the action text
+            DEBUG.error("%s\n%s",
+                    "CashierModel.doProductSearch", e.getMessage());
+            theAction = e.getMessage();
+
+        }
+
+        //Notify our observers about the changes we made
+        askForUpdate(theAction);
+
+    }
+
+    /**
+     * Add product to the basket
+     * @param product The product to add to the basket
+     */
+    public void addToBasket(Product product) {
+        String theAction = "";
+
+        //If we checked the state of the product add it to the basket
+        //If not let the cashier know
+        try {
+            if (orderState != OrderState.CHECKED) {
+                theAction = "Please check availability first";
+            } else {
+
+
+                //remove the quantity of product from the database
+                boolean stockBought = theStock.buyStock(
+                        product.getProductNum(),
+                        product.getQuantity());
+
+                //if successful, make a new basket if needed and add the product
+                if (stockBought) {
+                    makeBasketIfReq();
+                    Product p = new Product(product.getProductNum(), product.getDescription(), product.getPrice(), product.getQuantity());
+                    p.setPictureURL(product.getPictureURL());
+                    DEBUG.trace(p.getPictureURL());
+                    theBasket.add(p);
+
+                    //update the action text
+                    theAction = "Added item number " +
+                            product.getProductNum() +
+                            " to the basket.";
+                } else {
+
+                    //update the action text on failure to add product
+                    theAction = "Couldn't Add to Basket";
+                }
+
+                //reset the search basket
+                searchBasket = null;
+            }
+        } catch (StockException e) {
+
+            //Send error to debug and to action text
+            DEBUG.error("%s\n%s",
+                    "CashierModel.doBuy", e.getMessage());
+            theAction = e.getMessage();
+        }
+
+        //Update the order state and notify any observers of changes
+        orderState = OrderState.PROCESS;
+        askForUpdate(theAction);
+    }
+
+    /**
+     * Cashier checks out the basket
+     */
+    public void checkoutBasket() {
+        String theAction = "";
+
+        //If the basket is not null and contains 1 or more items, checkout the order.
+        try {
+            if (theBasket != null && !theBasket.isEmpty()) {
+
+                //Checkout the order and set our state and action text
+                theOrder.newOrder(theBasket);
+                theAction = "Order checked out";
+                orderState = OrderState.PROCESS;
+
+                //Reset the baskets
+                searchBasket = null;
+                theBasket = null;
+
+            } else {
+
+                //Set action text for no basket found
+                theAction = "No Basket Found";
+            }
+        } catch (OrderException e) {
+
+            //Send error message to debug and action text
+            DEBUG.error("%s\n%s",
+                    "CashierModel.doCancel", e.getMessage());
+            theAction = e.getMessage();
+        }
+
+        //Notify our observers of any changes to the dataset
+        askForUpdate(theAction);
+    }
+
+    /**
+     * ask for update of view called at start of day
+     * or after system reset
+     */
+    public void askForUpdate(String updateText) {
+        setChanged();
+        notifyObservers(updateText);
+    }
+
+    /**
+     * make a Basket with a unique serial number when required
+     */
+    private void makeBasketIfReq() {
+
+        //If the basket is null, create a new unique basket
+        if (theBasket == null) {
+            try {
+
+                //Generates a unique order number and makes a new basket with it
+                int uon = theOrder.uniqueNumber();
+                theBasket = makeBasket();
+                theBasket.setOrderNum(uon);
+
+            } catch (OrderException e) {
+
+                //Send error message to debug
+                DEBUG.error("""
+                        Comms failure
+                        CashierModel.makeBasket()
+                        %s""", e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * return an instance of a new Basket
+     * @return an instance of a new Basket
+     */
+    protected BetterBasket makeBasket() {
+        return new BetterBasket();
+    }
+
+    /**
+     * returns the type of search selected
+     * @return an Enum stating the type of search selected
+     */
+    public SearchSelection checkSearchSelection() {
+        return searchSelection;
+    }
+
+    /**
+     * Sets the type of search required
+     * @param searchSelection an Enum stating the type of search required
+     */
+    public void setSearchSelection(SearchSelection searchSelection) {
+        this.searchSelection = searchSelection;
+        DEBUG.trace("setSearchSelection", searchSelection);
+    }
+
+    /**
+     * Removes selected product from the shopping cart
+     * @param product The product to remove from the shopping cart
+     */
+    public void removeFromCart(Product product) {
+
+        for (Product p : theBasket) {
+            if (p.getProductNum().equals(product.getProductNum())) {
+
+                //If product is in the basket remove it
+                for (Product pr : theBasket) {
+                    if (pr.getProductNum().equals(product.getProductNum())) {
+                        theBasket.remove(pr);
+                        break;
+                    }
+                }
+                String theAction = "";
+
+                try {
+
+                    //add back the stock that was removed from the basket
+                    theStock.addStock(product.getProductNum(), product.getQuantity());
+                    theAction = "Item number " + product.getProductNum() + " removed from cart.";
+
+                } catch (StockException e) {
+
+                    //Send error message to debug and to the action text
+                    DEBUG.error("%s\n%s",
+                            "CashierModel.removeFromCart", e.getMessage());
+                    theAction = e.getMessage();
+                }
+
+                //Notify our observers of any changes made
+                setChanged();
+                notifyObservers(theAction);
+            }
+            return;
+        }
+    }
 }
   

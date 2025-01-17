@@ -1,61 +1,114 @@
 package catalogue;
 
+import debug.DEBUG;
+
+import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.ParseException;
 
 /**
  * Used to hold the following information about
- * a product: Product number, Description, Price, Stock level.
- * @author  Mike Smith University of Brighton
- * @version 2.0
+ * a product: Product number, Description, Price, Stock level, Image URL.
+ * @author Mike Smith University of Brighton
+ * @author Peter Blackburn
+ * @version 2.1
  */
+public class Product implements Serializable, Comparable<Product> {
+    @Serial
+    private static final long serialVersionUID = 20092506;
+    private String productNumber;
+    private String description;
+    private double unitPrice;
+    private int quantity;
+    private String pictureURL;
 
-public class Product implements Serializable
-{
-  private static final long serialVersionUID = 20092506;
-  private String theProductNum;       // Product number
-  private String theDescription;      // Description of product
-  private double thePrice;            // Price of product
-  private int    theQuantity;         // Quantity involved
+    /**
+     * Product Constructor
+     * @param productNumber Product number
+     * @param description Description of product
+     * @param unitPrice The unit price of the product
+     * @param quantity The Quantity of the product involved
+     */
+    public Product(String productNumber, String description,
+                   double unitPrice, int quantity) {
+        this.productNumber = productNumber;
+        this.description = description;
+        this.unitPrice = unitPrice;
+        this.quantity = quantity;
+    }
 
-  /**
-   * Construct a product details
-   * @param aProductNum Product number
-   * @param aDescription Description of product
-   * @param aPrice The price of the product
-   * @param aQuantity The Quantity of the product involved
-   */
-  public Product( String aProductNum, String aDescription,
-                  double aPrice, int aQuantity )
-  {
-    theProductNum  = aProductNum;     // Product number
-    theDescription = aDescription;    // Description of product
-    thePrice       = aPrice;          // Price of product
-    theQuantity    = aQuantity;       // Quantity involved
-  }
-  
-  public String getProductNum()  { return theProductNum; }
-  public String getDescription() { return theDescription; }
-  public double getPrice()       { return thePrice; }
-  public int    getQuantity()    { return theQuantity; }
-  
-  public void setProductNum( String aProductNum )
-  { 
-    theProductNum = aProductNum;
-  }
-  
-  public void setDescription( String aDescription )
-  { 
-    theDescription = aDescription;
-  }
-  
-  public void setPrice( double aPrice )
-  { 
-    thePrice = aPrice;
-  }
-  
-  public void setQuantity( int aQuantity )
-  { 
-    theQuantity = aQuantity;
-  }
+    public String getProductNum() {
+        return productNumber;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public double getPrice() {
+        return unitPrice;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public String getPictureURL() {
+        return pictureURL;
+    }
+
+    public void setProductNum(String aProductNum) {
+        productNumber = aProductNum;
+    }
+
+    public void setDescription(String aDescription) {
+        description = aDescription;
+    }
+
+    public void setPrice(double aPrice) {
+        unitPrice = aPrice;
+    }
+
+    public void setQuantity(int aQuantity) {
+        quantity = aQuantity;
+    }
+
+    public void setPictureURL(String pictureURL) {
+        this.pictureURL = pictureURL;
+    }
+
+    /**
+     * @param pr The product being compared.
+     * @return The result of the comparison (1 if higher, 0 if equal, -1 if lower)
+     */
+    @Override
+    public int compareTo(Product pr) {
+        //Parse the product numbers from strings into longs
+        long productNum = Long.parseLong(productNumber);
+        long productNumCompare = Long.parseLong(pr.productNumber);
+        //Use the built-in Long compare function to return an ascending comparison
+        return Long.compare(productNum, productNumCompare);
+    }
+
+    /**
+     * Overrides the toString output for the Product displaying a description, total price and the stock level
+     * @return String showing the description, total price and stock level
+     */
+    @Override
+    public String toString() {
+        return productNumber + " - " + description + " | Total Price: " + unitPrice * quantity + " - Qty: " + quantity;
+    }
+
+    /**
+     * Returns the total value of the product as a double
+     * @return The total value of the product as a double
+     */
+    public double getTotalPrice() {
+      BigDecimal bigDecimal = new BigDecimal(unitPrice * quantity);
+      BigDecimal roundedWithScale = bigDecimal.setScale(2, BigDecimal.ROUND_HALF_UP);
+      return roundedWithScale.doubleValue();
+    }
 
 }

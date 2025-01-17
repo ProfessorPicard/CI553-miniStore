@@ -19,7 +19,6 @@ import java.rmi.RemoteException;
 /**
  * Setup connection to the middle tier
  */
-
 public class F_StockRW extends F_StockR 
                        implements StockReadWriter
 {
@@ -53,12 +52,10 @@ public class F_StockRW extends F_StockR
    * @return StockNumber, Description, Price, Quantity
    * @throws StockException if remote exception
    */
-
- 
   public boolean buyStock( String number, int amount )
          throws StockException
   {
-    DEBUG.trace("F_StockRW:buyStock()" );
+    DEBUG.trace("F_StockRW:buyStock()");
     try
     {
       if ( aR_StockRW == null ) connect();
@@ -76,7 +73,6 @@ public class F_StockRW extends F_StockR
    * @param amount of stock
    * @throws StockException if remote exception
    */
-
   public void addStock( String number, int amount )
          throws StockException
   {
@@ -98,7 +94,6 @@ public class F_StockRW extends F_StockR
    * @param detail Stock details to be modified
    * @throws StockException if remote exception
    */
-
   public void modifyStock( Product detail )
               throws StockException
   {
